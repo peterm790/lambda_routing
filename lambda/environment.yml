@@ -1,0 +1,22 @@
+name: test2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+ - numpy
+ - pandas
+ - xarray 
+ - fsspec
+ - s3fs
+ - holoviews 
+ - geoviews 
+ - hvplot 
+ - dask 
+ - boto3 
+ - cartopy 
+ - pip 
+ - zarr 
+ - geopy
+ - pip:
+   - git+https://github.com/peterm790/weather_routing
+   - awslambdaric
