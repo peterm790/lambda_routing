@@ -13,6 +13,7 @@ def get_weather_data(event):
     year = event['year']
     month = event['month']
     day = event['day']
+    hour = event['hour']
     step =  event['step']
     max_days =  event['max_days']
     extent = event['extent']
@@ -36,6 +37,7 @@ def get_weather_data(event):
     ds = ds.rename({'time0':'time'})
     lat1,lon1,lat2,lon2 = extent
     ds = ds.sel(lat = slice(max([lat1, lat2]),min([lat1, lat2]))).sel(lon = slice(min([lon1, lon2]),max([lon1, lon2])))
+    ds = ds.sel(time = slice(f'{year}-{month}-{day}-{hour}:00:00','2100-01-01-12:00:00'))
     ds = ds.sel(time = ds.time.values[:max_days*24:step])
     u10 = ds.eastward_wind_at_10_metres
     v10 = ds.northward_wind_at_10_metres
@@ -49,7 +51,6 @@ def get_weather_data(event):
     ds['wind_angle'] = np.deg2rad((270 - (ds.twd)) % 360)
     del ds.lat.attrs['units']
     ds.lon.attrs['long_name'] = 'longitude'
-    ds = ds.interpolate_na(dim = 'time0', method = 'linear')
     return ds.load()
 
 
@@ -68,7 +69,7 @@ def handler(event, context):
         twd_sel = twd_sel.sel(lat = lat, lon = lon, method = 'nearest')
         return (np.float32(twd_sel.values), np.float32(tws_sel.values))
     point_valid = point_validity.land_sea_mask(input_data['extent']).point_validity_arr
-    df = pd.DataFrame(input_data['polar'])
+    df = pd.DataFrame(json.loads(input_data['polar']))
     df.columns = df.columns.astype(float)
     df.index = df.index.astype(float)
     polar_class = polar.Polar(df = df)
@@ -86,14 +87,15 @@ def handler(event, context):
     route_df = weatherrouter.get_fastest_route()
     vis = visualize.visualize(ds, input_data['start'], input_data['finish'], route_df)
     plot = vis.return_plot()
-    with fs.open(f"s3://lambdaroutingstack-weatherroutebucket7b183c04-pyxlno4db9s1/results/{input_data['name']}.csv", 'w') as f:
+    name = object_key.split('/')[-1].split('.')[0]
+    with fs.open(f"s3://lambdaroutingstack-weatherroutebucket7b183c04-pyxlno4db9s1/results/{name}.csv", 'w') as f:
         route_df.to_csv(f)
-    with fs.open(f"s3://lambdaroutingstack-weatherroutebucket7b183c04-pyxlno4db9s1/results/{input_data['name']}.html", 'w') as f:
+    with fs.open(f"s3://lambdaroutingstack-weatherroutebucket7b183c04-pyxlno4db9s1/results/{name}.html", 'w') as f:
         hvplot.save(plot, f, resources=INLINE)
     return {
         'statusCode': 200,
         'headers': {
             'Content-Type': 'text/plain'
         },
-        'body': '{} request completed successfully \n'.format(input_data['name'])
+        'body': '{} request completed successfully \n'.format(name)
     }
