@@ -1,3 +1,10 @@
+Following description in https://dev.to/wesleycheek/deploy-a-docker-built-lambda-function-with-aws-cdk-fio with some modification to DockerFile as described in https://docs.aws.amazon.com/lambda/latest/dg/python-image.html
+
+
+
+
+
+
 
 # Welcome to your CDK Python project!
 
